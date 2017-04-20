@@ -16,24 +16,16 @@ exports.handler = function(event, context, callback) {
 };
 
 var handlers = {
-    'LaunchRequest': function () {
-        this.emit('GetQuality');
-    },
-    'GetNewFactIntent': function () {
-        this.emit('GetFact');
-    },
-    'GetFact': function () {
-        // Get a random space fact from the space facts list
-        var factIndex = Math.floor(Math.random() * FACTS.length);
-        var randomFact = FACTS[factIndex];
-
+    'GetAirQualityIntent': function () {
+        // TODO make call to air quality API
+        var city = "Test";
         // Create speech output
-        var speechOutput = "Here's your fact: " + randomFact;
+        var speechOutput = "Here's your city: ";
 
-        this.emit(':tellWithCard', speechOutput, SKILL_NAME, randomFact)
+        this.emit(':tellWithCard', speechOutput, SKILL_NAME, city);
     },
     'AMAZON.HelpIntent': function () {
-        var speechOutput = "You can say tell me a space fact, or, you can say exit... What can I help you with?";
+        var speechOutput = "You can ask me about the air quality in a city, or, you can say exit... What can I help you with?";
         var reprompt = "What can I help you with?";
         this.emit(':ask', speechOutput, reprompt);
     },
@@ -42,5 +34,8 @@ var handlers = {
     },
     'AMAZON.StopIntent': function () {
         this.emit(':tell', 'Goodbye!');
+    },
+    "Unhandled": function() {
+        this.emit(":tell", "Test");
     }
 };
