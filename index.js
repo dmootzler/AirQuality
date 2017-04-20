@@ -18,13 +18,51 @@ var handlers = {
     'GetAirQualityIntent': function () {
         // the city contained in the request
         var city = calledEvent.request.intent.slots.CITY.value;
-        // TODO check if user has a favorite city stored. If not, begin intent to set city
+        // JSON object of air quality data
+        var airData;
+        // text to speak
+        var speechOutput;
+        // set context to this
+        var context = this;
         
         // TODO make call to air quality API
+        var http = require('https');
+
+        //The url we want is: 'www.random.org/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new'
+        var options = {
+            host: "api.openaq.org",
+            path: '/v1/latest?city=' + encodeURIComponent(city)
+        };
         
-        // Create speech output
+        // callback function to deal with air data
+        function callback(response) {
+            var str = '';
+
+            // another chunk of data has been recieved, so append it to `str`
+            response.on('data', function (chunk) {
+                // raw string data from API
+                str += chunk;
+            });
+
+            // the whole response has been recieved, so we just print it out here
+            response.on('end', function () {
+                console.log(str);
+                // parse string returned by API
+                airData = JSON.parse(str);
+                
+                // TODO make usable output from this data
+                // TODO output error message if no results are returned
+                speechOutput = airData.results[0].measurements[0].parameter;
+                
+                // Create speech output
+                context.emit(':tell', speechOutput);
+            });
+        }
         
-        this.emit(':tell', city);
+        // make request to server
+        http.request(options, callback).end();
+        
+        
     },
     'AMAZON.HelpIntent': function () {
         var speechOutput = "You can ask me about the air quality in a city, or, you can say exit... What can I help you with?";
