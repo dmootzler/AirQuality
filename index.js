@@ -16,113 +16,125 @@ exports.handler = function(event, context, callback) {
 
 var handlers = {
     'GetAirQualityIntent': function () {
-        // the city contained in the request
-        var city = calledEvent.request.intent.slots.CITY.value;
-        // split name around spaces
-        var splitCity = city.split(" ");
-        // capitalize each word
-        for(var i = 0; i < splitCity.length; i++) {
-            console.log(splitCity[i]);
-            splitCity[i] = splitCity[i].substr(0,1).toUpperCase() + splitCity[i].substr(1).toLowerCase();
-            console.log(splitCity[i]);
-        }
-        city = "";
-        // rejoin the capitalized words
-        for(var i = 0; i < splitCity.length; i++) {
-            city += splitCity[i];
-            if(i < splitCity.length - 1) {
-                city += " ";
+        // check that a city has been defined
+        if(calledEvent.request.intent.slots.CITY.value) {
+            // the city contained in the request
+            var city = calledEvent.request.intent.slots.CITY.value;
+            // split name around spaces
+            var splitCity = city.split(" ");
+            // capitalize each word
+            for(var i = 0; i < splitCity.length; i++) {
+                console.log(splitCity[i]);
+                splitCity[i] = splitCity[i].substr(0,1).toUpperCase() + splitCity[i].substr(1).toLowerCase();
+                console.log(splitCity[i]);
             }
-        }
-        console.log("New city: " + city);
-        // JSON object of air quality data
-        var airData;
-        // text to speak
-        var speechOutput;
-        // set context to this
-        var context = this;
-        // warnings about air quality
-        var warnings = [];
-        
-        // make call to air quality API
-        var http = require('https');
+            city = "";
+            // rejoin the capitalized words
+            for(var i = 0; i < splitCity.length; i++) {
+                city += splitCity[i];
+                if(i < splitCity.length - 1) {
+                    city += " ";
+                }
+            }
+            console.log("New city: " + city);
+            // JSON object of air quality data
+            var airData;
+            // text to speak
+            var speechOutput;
+            // set context to this
+            var context = this;
+            // warnings about air quality
+            var warnings = [];
 
-        // build request
-        var options = {
-            host: "api.openaq.org",
-            path: '/v1/latest?city=' + encodeURIComponent(city)
-        };
-        
-        // callback function to deal with air data
-        function callback(response) {
-            var str = '';
+            // make call to air quality API
+            var http = require('https');
 
-            // another chunk of data has been recieved, so append it to `str`
-            response.on('data', function (chunk) {
-                // raw string data from API
-                str += chunk;
-            });
+            // build request
+            var options = {
+                host: "api.openaq.org",
+                path: '/v1/latest?city=' + encodeURIComponent(city)
+            };
 
-            // the whole response has been recieved, so we just print it out here
-            response.on('end', function () {
-                console.log(str);
-                // parse string returned by API
-                airData = JSON.parse(str);
-                
-                // output error message if no result is returned
-                if(airData.results.length > 0) {
-                    console.log("Results found: " + airData.results);
-                    // create useful information from data
-                    // check pm25
-                    if(getParam("pm25") >= 60) {
-                        warnings.push("There is a dangerous concentration of microscopic airborne particles.");
-                    } else if(getParam("pm25") >= 35) {
-                        warnings.push("There is a potentially unhealthy concentration of microscopic airborne particles.");
-                    }
-                    // check so2
-                    if(getParam("so2") >= 200) {
-                        warnings.push("There is a potentially irritating concentration of sulfur dioxide in the air. This is only a concern if you have severe allergies, asthma, or some other respiratory condition.");
-                    }
-                    // check pm10
-                    if(getParam("pm10") >= 420) {
-                        warnings.push("There is a highly dangerous concentration of macroscopic airborne particles.");
-                    } else if(getParam("pm10") >= 150) {
-                        warnings.push("There is a potentially irritating concentration of macroscopic airborne particles.");
-                    } else if(getParam("pm10") >= 100) {
-                        warnings.push("There is an above-average concentration of macroscopic airborne particles, which may be irritating for people with allergies or asthma.");
-                    }
-                    // check no2
-                    if(getParam("no2") >= 250) {
-                        warnings.push("There is a highly dangerous concentration of nitrogen dioxide. You should not go outside without protection.");
-                    } else if(getParam("no2") >= 150) {
-                        warnings.push("There is a high and potentially dangerous concentration of nitrogen dioxide. Try to limit your exposure to the outdoors.");
-                    } else if(getParam("no2") >= 75) {
-                        warnings.push("There is an abnormal concentration of nitrogen dioxide. Limit your exposure to the outdoors if you have a lung condition like asthma.");
-                    } else if(getParam("no2") >= 45) {
-                        warnings.push("There is an above-average concentration of nitrogen dioxide. It will only affect people with severe asthma.");
-                    }
-                    
-                    // create speech output from warnings
-                    if(warnings.length == 0) {
-                        speechOutput = "According to my data, the air quality is great! Go out and enjoy the day.";
+            // callback function to deal with air data
+            function callback(response) {
+                var str = '';
+
+                // another chunk of data has been recieved, so append it to `str`
+                response.on('data', function (chunk) {
+                    // raw string data from API
+                    str += chunk;
+                });
+
+                // the whole response has been recieved, so we just print it out here
+                response.on('end', function () {
+                    console.log(str);
+                    // parse string returned by API
+                    airData = JSON.parse(str);
+
+                    // output error message if no result is returned
+                    if(airData.results.length > 0) {
+                        console.log("Results found: " + airData.results);
+                        // create useful information from data
+                        // check pm25
+                        if(getParam("pm25") >= 60) {
+                            warnings.push("There is a dangerous concentration of microscopic airborne particles.");
+                        } else if(getParam("pm25") >= 35) {
+                            warnings.push("There is a potentially unhealthy concentration of microscopic airborne particles.");
+                        }
+                        // check so2
+                        if(getParam("so2") >= 200) {
+                            warnings.push("There is a potentially irritating concentration of sulfur dioxide in the air. This is only a concern if you have severe allergies, asthma, or some other respiratory condition.");
+                        }
+                        // check pm10
+                        if(getParam("pm10") >= 420) {
+                            warnings.push("There is a highly dangerous concentration of macroscopic airborne particles.");
+                        } else if(getParam("pm10") >= 150) {
+                            warnings.push("There is a potentially irritating concentration of macroscopic airborne particles.");
+                        } else if(getParam("pm10") >= 100) {
+                            warnings.push("There is an above-average concentration of macroscopic airborne particles, which may be irritating for people with allergies or asthma.");
+                        }
+                        // check no2
+                        if(getParam("no2") >= 250) {
+                            warnings.push("There is a highly dangerous concentration of nitrogen dioxide. You should not go outside without protection.");
+                        } else if(getParam("no2") >= 150) {
+                            warnings.push("There is a high and potentially dangerous concentration of nitrogen dioxide. Try to limit your exposure to the outdoors.");
+                        } else if(getParam("no2") >= 75) {
+                            warnings.push("There is an abnormal concentration of nitrogen dioxide. Limit your exposure to the outdoors if you have a lung condition like asthma.");
+                        } else if(getParam("no2") >= 45) {
+                            warnings.push("There is an above-average concentration of nitrogen dioxide. It will only affect people with severe asthma.");
+                        }
+
+                        // create speech output from warnings
+                        if(warnings.length == 0) {
+                            speechOutput = "According to my data, the air quality is great! Go out and enjoy the day.";
+                        } else {
+                            speechOutput = "According to my data, the air quality isn't perfect right now. ";
+                            for(var i = 0; i < warnings.length; i++) {
+                                speechOutput += warnings[i] + " ";
+                            }
+                        }
+                        context.emit(":tell", speechOutput);
                     } else {
-                        speechOutput = "According to my data, the air quality isn't perfect right now. ";
-                        for(var i = 0; i < warnings.length; i++) {
-                            speechOutput += warnings[i] + " ";
+                        console.warn("No results found");
+                        if(city == "" || city == " ") {
+                            console.warn("Empty city");
+                            // ask for a specific city
+                            context.emit(":ask", "I don't think you named a city. I can only answer questions about the air quality in a specific city.", "What city would you like me to search for?");
+                        } else {
+                            console.warn("Insufficient city found");
+                            // ask for different location
+                            context.emit(":ask", "I couldn't find any data about " + city + ". If you want to try a different location, just say, what is the air quality in New York, for example. Remember that bigger cities are more likely to be in my database.", "What city would you like to search?");
                         }
                     }
-                } else {
-                    console.warn("No results found");
-                    if(city == "" || city == " ") {
-                        speechOutput = "I don't think you named a city. I can only answer questions about the air quality in a specific city.";
-                    } else {
-                        speechOutput = "I was unable to find enough data about " + city + " to provide air quality information. You can try again with a different location.";
-                    }
-                }
-                
-                // Create speech output
-                context.emit(':tell', speechOutput);
-            });
+                });
+            }
+            
+            // make request to server
+            http.request(options, callback).end();
+        } else {
+            console.warn("Undefined city");
+            // ask for a specific city
+            this.emit(":ask", "I don't think you named a city. I can only answer questions about the air quality in a specific city.", "What city would you like me to search for?");
         }
         
         // get value of a certain parameter
@@ -135,11 +147,6 @@ var handlers = {
             }
             return null;
         }
-        
-        // make request to server
-        http.request(options, callback).end();
-        
-        
     },
     'AMAZON.HelpIntent': function () {
         var speechOutput = "You can ask me about the air quality in a city, or, you can say exit... What can I help you with?";
@@ -153,6 +160,6 @@ var handlers = {
         this.emit(':tell', 'Goodbye!');
     },
     "Unhandled": function() {
-        this.emit(":tell", "An error occured! Make sure to ask about the air quality in a specific city.");
+        this.emit(":ask", "An error occured! Make sure to ask about the air quality in a specific city.", "You can say things like, Alexa, ask My Air Quality Monitor what the pollution levels are in Los Angeles.");
     }
 };
